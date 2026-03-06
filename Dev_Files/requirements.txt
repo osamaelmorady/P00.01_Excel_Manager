@@ -1,0 +1,11 @@
+customtkinter
+PyInstaller
+pyinstaller
+PyYaml
+openpyxl
+tkinterdnd2
+pandas
+tksheet
+darkdetect
+python-docx
+beautifulsoup4
