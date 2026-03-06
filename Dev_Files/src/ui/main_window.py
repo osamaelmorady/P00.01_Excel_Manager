@@ -1,7 +1,6 @@
 # ui/main_window.py
 import tkinter as tk
 from tkinter import ttk
-import customtkinter as ctk
 from tkinter import filedialog, messagebox
 
 from managers.csv_mgr import CsvManager
