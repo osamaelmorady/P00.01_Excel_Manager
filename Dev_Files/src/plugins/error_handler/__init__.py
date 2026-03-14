@@ -1,0 +1,1 @@
+# src/plugins/error_handler/__init__.py

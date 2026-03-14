@@ -1,12 +1,12 @@
-import tkinter as tk
+import customtkinter as ctk
 
 
-class StatusBar(tk.Frame):
+class StatusBar(ctk.CTkFrame):
 
     def __init__(self, parent):
-        super().__init__(parent, bd=1, relief="sunken")
+        super().__init__(parent, border_width=1)
 
-        self.label = tk.Label(
+        self.label = ctk.CTkLabel(
             self,
             text="Ready",
             anchor="w",
@@ -34,4 +34,4 @@ class StatusBar(tk.Frame):
         if selection:
             parts.append(f"Selected: {selection}")
 
-        self.label.config(text="   |   ".join(parts))
+        self.label.configure(text="   |   ".join(parts))

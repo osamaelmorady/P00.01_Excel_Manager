@@ -1,11 +1,18 @@
-import tkinter as tk
+import customtkinter as ctk
+# from customtkinter.windows.ctk_toplevel import CTkMenu  # Import CTkMenu - REMOVE THIS LINE
 from tksheet import Sheet
+from tkinter import Menu  # Import Menu from tkinter
+from services.formula_engine import FormulaEngine
+from services.filter_engine import FilterEngine
 
-
-class SheetView(tk.Frame):
+class SheetView(ctk.CTkFrame):  # Inherit from ctk.CTkFrame
 
     def __init__(self, parent, status_bar=None):
         super().__init__(parent)
+        self.formulas = {}
+        self.original_data = []
+        self.filtered_data = []
+        self.active_filters = {}
 
         self.sheet = Sheet(self,
                            width=800,  # Set overall width
@@ -38,7 +45,7 @@ class SheetView(tk.Frame):
         self.sheet.extra_bindings([
             ("cell_select", self._update_status),
             ("drag_select_cells", self._update_status),
-            ("edit_cell", self._update_status),
+            ("edit_cell", self._on_cell_edit),
         ])
 
         self.status_bar = status_bar
@@ -53,7 +60,7 @@ class SheetView(tk.Frame):
     # --------------------------------
 
     def _create_context_menu(self):
-        menu = tk.Menu(self, tearoff=0)
+        menu = Menu(self, tearoff=0)  # Use tkinter.Menu
 
         menu.add_command(label="Add Row Above", command=self.add_row_above)
         menu.add_command(label="Add Row Below", command=self.add_row_below)
@@ -133,6 +140,9 @@ class SheetView(tk.Frame):
     # --------------------------------
 
     def load_data(self, data):
+
+        self.engine = FilterEngine(data)
+
         self.sheet.set_sheet_data(data)
 
     def get_data(self):
@@ -178,3 +188,103 @@ class SheetView(tk.Frame):
                 break
             index -= 1
         return name
+
+    def _on_cell_edit(self, event=None):
+
+        r = event.row
+        c = event.column
+
+        value = self.sheet.get_cell_data(r, c)
+
+        if isinstance(value, str) and value.startswith("="):
+
+            self.formulas[(r,c)] = value
+
+            data = self.get_data()
+
+            engine = FormulaEngine(data)
+
+            result = engine.evaluate(value)
+
+            self.sheet.set_cell_data(r, c, result)
+
+        else:
+
+            if (r,c) in self.formulas:
+                del self.formulas[(r,c)]
+
+        self._update_status()
+
+    def evaluate_sheet(self):
+
+        data = self.get_data()
+
+        engine = FormulaEngine(data)
+
+        evaluated = []
+
+        for r,row in enumerate(data):
+
+            new_row = []
+
+            for c,cell in enumerate(row):
+
+                if (r,c) in self.formulas:
+                    new_row.append(engine.evaluate(self.formulas[(r,c)]))
+                else:
+                    new_row.append(cell)
+
+            evaluated.append(new_row)
+
+        return evaluated
+    
+    
+    def apply_filter(self, column, value):
+
+        filtered = self.engine.apply_filter(column, value)
+
+        self.sheet.set_sheet_data(filtered)
+
+
+    def clear_filters(self):
+
+        data = self.engine.clear_filters()
+
+        self.sheet.set_sheet_data(data)
+        
+        
+        
+    import tkinter as tk
+    import customtkinter as ctk
+
+    def open_filter_menu(self):
+    
+        cols = self.sheet.get_selected_columns()
+    
+        if not cols:
+            return
+    
+        column = next(iter(cols))
+    
+        values = self.engine.unique_values(column)
+    
+        popup = ctk.CTkToplevel(self)
+        popup.title("Filter Column")
+    
+        for value in values:
+        
+            btn = ctk.CTkButton(
+                popup,
+                text=str(value),
+                command=lambda v=value: self.apply_filter(column, v)
+            )
+    
+            btn.pack(fill="x", padx=10, pady=2)
+    
+        clear_btn = ctk.CTkButton(
+            popup,
+            text="Clear Filters",
+            command=lambda: [self.clear_filters(), popup.destroy()]
+        )
+    
+        clear_btn.pack(pady=10)

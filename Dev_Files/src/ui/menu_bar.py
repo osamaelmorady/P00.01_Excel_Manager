@@ -1,7 +1,15 @@
 # ui/menu_bar.py
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from services.polyspace_justifier import PolyspaceApp  # Import PolyspaceApp
+
+## import plugins
+from plugins.error_handler.generate_dtch import DtchGenerator
+from plugins.error_handler.generate_dem import DemGenerator
+from plugins.error_handler.generate_fim import FimGenerator
+from plugins.error_handler.generate_ydemx import YdemxGenerator
+from plugins.polyspace.polyspace_justifier import PolyspaceApp  # Import PolyspaceApp
+from ui.sheet_view import SheetView
+
 
 
 class MenuBar(tk.Menu):
@@ -9,6 +17,7 @@ class MenuBar(tk.Menu):
         super().__init__(parent)
 
         self.controller = controller
+
 
         self._create_file_menu()
         self._create_edit_menu()
@@ -61,6 +70,12 @@ class MenuBar(tk.Menu):
         
 
         view_menu.add_cascade(label="Appearance", menu=appearance_menu)
+        
+        
+        view_menu.add_separator()
+        view_menu.add_command(label="Clear Filters", command=self._clear_filters)
+        view_menu.add_command(label="Filter Column", command=self._filter_selected_column)
+        
 
         view_menu.add_separator()
         view_menu.add_checkbutton(label="Show Sheet Panel",variable=self.controller.show_sheet_panel,
@@ -73,13 +88,20 @@ class MenuBar(tk.Menu):
 
     def _create_tools_menu(self):
         tools_menu = tk.Menu(self, tearoff=0)
-        tools_menu.add_command(label="Polyspace Justifier", command=self.run_polyspace_justifier, accelerator="  F3")
-        tools_menu.add_separator()
-        tools_menu.add_command(label="Generate YDEMx", command=self._Not_implemented_yet, accelerator="  F4")
-        tools_menu.add_command(label="Generate DEM", command=self._Not_implemented_yet, accelerator="  F5")
-        tools_menu.add_command(label="Generate FIM", command=self._Not_implemented_yet, accelerator="  F6")
-        tools_menu.add_command(label="Generate DTCH", command=self.run_dtch_generator, accelerator="  F7")
+        
+        error_handler_menu = tk.Menu(tools_menu, tearoff=0)
+        error_handler_menu.add_command(label="Generate YDEMx", command=self.run_ydemx_generator, accelerator="  F4")
+        error_handler_menu.add_command(label="Generate DEM", command=self.run_dem_generator, accelerator="  F5")
+        error_handler_menu.add_command(label="Generate FIM", command=self.run_fim_generator, accelerator="  F6")
+        error_handler_menu.add_command(label="Generate DTCH", command=self.run_dtch_generator, accelerator="  F7")
+        tools_menu.add_cascade(label="Error Handler", menu=error_handler_menu)
+        
+        polspace_menu = tk.Menu(tools_menu, tearoff=0)
+        polspace_menu.add_command(label="Polyspace Justifier", command=self.run_polyspace_justifier, accelerator="  F3")
+        tools_menu.add_cascade(label="Polyspace", menu=polspace_menu)
+        
         self.add_cascade(label="Tools", menu=tools_menu)
+
 
 
     def _create_help_menu(self):
@@ -88,12 +110,44 @@ class MenuBar(tk.Menu):
         self.add_cascade(label="Help", menu=help_menu)
 
 
-    def run_polyspace_justifier(self):
-        PolyspaceApp(self.controller.root, self.controller)
-        
+    def run_ydemx_generator(self):
+        self.controller.root.lower()  # Lower the main window
+        YdemxGenerator(self.controller.root, self.controller)
+
+    def run_dem_generator(self):
+        self.controller.root.lower()  # Lower the main window
+        DemGenerator(self.controller.root, self.controller)    
+
+    def run_fim_generator(self):
+        self.controller.root.lower()  # Lower the main window
+        FimGenerator(self.controller.root, self.controller)
+
     def run_dtch_generator(self):
-         self.controller._generate_dtch()
+        self.controller.root.lower()  # Lower the main window
+        DtchGenerator(self.controller.root, self.controller)
         
+    def run_polyspace_justifier(self):
+        self.controller.root.lower()  # Lower the main window
+        PolyspaceApp(self.controller.root, self.controller)
 
     def _Not_implemented_yet(self):
         messagebox.showinfo( "Not Implemneted yet", "Not Implemneted yet" )
+
+    def _filter_selected_column(self):
+    
+        main = self.master.app   # root.app → MainWindow
+    
+        active_view = main.tabs.get_active_view()
+    
+        if active_view:
+            active_view.open_filter_menu()
+    
+    
+    def _clear_filters(self):
+    
+        main = self.master.app
+    
+        active_view = main.tabs.get_active_view()
+    
+        if active_view:
+            active_view.clear_filters()
